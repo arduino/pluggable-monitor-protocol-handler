@@ -1,5 +1,5 @@
 //
-// This file is part of dummy-discovery.
+// This file is part of dummy-monitor.
 //
 // Copyright 2021 ARDUINO SA (http://www.arduino.cc/)
 //
@@ -24,23 +24,23 @@ import (
 	"time"
 
 	"github.com/arduino/go-properties-orderedmap"
-	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
-	"github.com/arduino/pluggable-discovery-protocol-handler/v2/dummy-discovery/args"
+	monitor "github.com/arduino/pluggable-monitor-protocol-handler"
+	"github.com/arduino/pluggable-monitor-protocol-handler/dummy-monitor/args"
 )
 
-// dummyDiscovery is an example implementation of a Discovery.
-// It simulates a real implementation of a Discovery by generating
+// dummyMonitor is an example implementation of a Monitor.
+// It simulates a real implementation of a Monitor by generating
 // connected ports deterministically, it can also be used for testing
 // purposes.
-type dummyDiscovery struct {
+type dummyMonitor struct {
 	startSyncCount int
 	closeChan      chan<- bool
 }
 
 func main() {
 	args.Parse()
-	dummy := &dummyDiscovery{}
-	server := discovery.NewServer(dummy)
+	dummy := &dummyMonitor{}
+	server := monitor.NewServer(dummy)
 	if err := server.Run(os.Stdin, os.Stdout); err != nil {
 		os.Exit(1)
 	}
@@ -49,18 +49,39 @@ func main() {
 // Hello does nothing.
 // In a real implementation it could setup background processes
 // or other kind of resources necessary to discover Ports.
-func (d *dummyDiscovery) Hello(userAgent string, protocol int) error {
+func (d *dummyMonitor) Hello(userAgent string, protocol int) error {
 	return nil
 }
 
 // Quit does nothing.
 // In a real implementation it can be used to tear down resources
-// used to discovery Ports.
-func (d *dummyDiscovery) Quit() {}
+// used to monitor Ports.
+func (d *dummyMonitor) Quit() {}
 
+//TODO implement
+func (d *dummyMonitor) Describe() {
+
+}
+
+//TODO implement
+func (d *dummyMonitor) Configure() {
+
+}
+
+//TODO implement
+func (d *dummyMonitor) Open() {
+
+}
+
+//TODO implement
+func (d *dummyMonitor) Close() {
+
+}
+
+//TODO remove
 // Stop is used to stop the goroutine started by StartSync
 // used to discover ports.
-func (d *dummyDiscovery) Stop() error {
+func (d *dummyMonitor) Stop() error {
 	if d.closeChan != nil {
 		d.closeChan <- true
 		close(d.closeChan)
@@ -69,8 +90,9 @@ func (d *dummyDiscovery) Stop() error {
 	return nil
 }
 
+//TODO remove
 // StartSync starts the goroutine that generates fake Ports.
-func (d *dummyDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
+func (d *dummyMonitor) StartSync(eventCB monitor.EventCallback, errorCB monitor.ErrorCallback) error {
 	d.startSyncCount++
 	if d.startSyncCount%5 == 0 {
 		return errors.New("could not start_sync every 5 times")
@@ -107,7 +129,7 @@ func (d *dummyDiscovery) StartSync(eventCB discovery.EventCallback, errorCB disc
 			case <-time.After(2 * time.Second):
 			}
 
-			eventCB("remove", &discovery.Port{
+			eventCB("remove", &monitor.Port{
 				Address:  port.Address,
 				Protocol: port.Protocol,
 			})
@@ -123,9 +145,9 @@ func (d *dummyDiscovery) StartSync(eventCB discovery.EventCallback, errorCB disc
 var dummyCounter = 0
 
 // createDummyPort creates a Port with fake data
-func createDummyPort() *discovery.Port {
+func createDummyPort() *monitor.Port {
 	dummyCounter++
-	return &discovery.Port{
+	return &monitor.Port{
 		Address:       fmt.Sprintf("%d", dummyCounter),
 		AddressLabel:  "Dummy upload port",
 		Protocol:      "dummy",

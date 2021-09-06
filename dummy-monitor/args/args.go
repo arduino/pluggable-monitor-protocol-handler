@@ -1,5 +1,5 @@
 //
-// This file is part of dummy-discovery.
+// This file is part of dummy-monitor.
 //
 // Copyright 2021 ARDUINO SA (http://www.arduino.cc/)
 //
@@ -35,7 +35,7 @@ func Parse() {
 			continue
 		}
 		if arg == "-v" || arg == "--version" {
-			fmt.Printf("dummy-discovery %s (build timestamp: %s)\n", Tag, Timestamp)
+			fmt.Printf("dummy-monitor %s (build timestamp: %s)\n", Tag, Timestamp)
 			os.Exit(0)
 		}
 		fmt.Fprintf(os.Stderr, "invalid argument: %s\n", arg)

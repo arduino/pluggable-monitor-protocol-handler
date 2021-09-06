@@ -1,5 +1,5 @@
 //
-// This file is part of pluggable-discovery-protocol-handler.
+// This file is part of pluggable-monitor-protocol-handler.
 //
 // Copyright 2021 ARDUINO SA (http://www.arduino.cc/)
 //
@@ -15,16 +15,16 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-// Package discovery is a library for handling the Arduino Pluggable-Discovery protocol
-// (https://github.com/arduino/tooling-rfcs/blob/main/RFCs/0002-pluggable-discovery.md#pluggable-discovery-api-via-stdinstdout)
+// Package monitor is a library for handling the Arduino Pluggable-Monitor protocol
+// (https://github.com/arduino/tooling-rfcs/blob/main/RFCs/0004-pluggable-monitor.md#pluggable-monitor-api-via-stdinstdout)
 //
-// The library implements the state machine and the parsing logic to communicate with a pluggable-discovery client.
+// The library implements the state machine and the parsing logic to communicate with a pluggable-monitor client.
 // All the commands issued by the client are conveniently translated into function calls, in particular
-// the Discovery interface are the only functions that must be implemented to get a fully working pluggable discovery
+// the Monitor interface are the only functions that must be implemented to get a fully working pluggable monitor
 // using this library.
 //
-// A usage example is provided in the dummy-discovery package.
-package discovery
+// A usage example is provided in the dummy-monitor package.
+package monitor
 
 import (
 	"bufio"
@@ -47,44 +47,44 @@ type Port struct {
 	Properties    *properties.Map `json:"properties,omitempty"`
 }
 
-// Discovery is an interface that represents the business logic that
-// a pluggable discovery must implement. The communication protocol
-// is completely hidden and it's handled by a DiscoveryServer.
-type Discovery interface {
+// Monitor is an interface that represents the business logic that
+// a pluggable monitor must implement. The communication protocol
+// is completely hidden and it's handled by a MonitorServer.
+type Monitor interface {
 	// Hello is called once at startup to provide the userAgent string
 	// and the protocolVersion negotiated with the client.
 	Hello(userAgent string, protocolVersion int) error
 
-	// StartSync is called to put the discovery in event mode. When the
-	// function returns the discovery must send port events ("add" or "remove")
+	// StartSync is called to put the monitor in event mode. When the
+	// function returns the monitor must send port events ("add" or "remove")
 	// using the eventCB function.
 	StartSync(eventCB EventCallback, errorCB ErrorCallback) error
 
-	// Stop stops the discovery internal subroutines. If the discovery is
+	// Stop stops the monitor internal subroutines. If the monitor is
 	// in event mode it must stop sending events through the eventCB previously
 	// set.
 	Stop() error
 
 	// Quit is called just before the server terminates. This function can be
-	// used by the discovery as a last chance gracefully close resources.
+	// used by the monitor as a last chance gracefully close resources.
 	Quit()
 }
 
 // EventCallback is a callback function to call to transmit port
-// metadata when the discovery is in "sync" mode and a new event
+// metadata when the monitor is in "sync" mode and a new event
 // is detected.
 type EventCallback func(event string, port *Port)
 
 // ErrorCallback is a callback function to signal unrecoverable errors to the
-// client while the discovery is in event mode. Once the discovery signal an
+// client while the monitor is in event mode. Once the monitor signal an
 // error it means that no more port-events will be delivered until the client
 // performs a STOP+START_SYNC cycle.
 type ErrorCallback func(err string)
 
-// A Server is a pluggable discovery protocol handler,
+// A Server is a pluggable monitor protocol handler,
 // it must be created using the NewServer function.
 type Server struct {
-	impl               Discovery
+	impl               Monitor
 	outputChan         chan *message
 	userAgent          string
 	reqProtocolVersion int
@@ -95,10 +95,10 @@ type Server struct {
 	cachedErr          string
 }
 
-// NewServer creates a new discovery server backed by the
-// provided pluggable discovery implementation. To start the server
+// NewServer creates a new monitor server backed by the
+// provided pluggable monitor implementation. To start the server
 // use the Run method.
-func NewServer(impl Discovery) *Server {
+func NewServer(impl Monitor) *Server {
 	return &Server{
 		impl:       impl,
 		outputChan: make(chan *message),
@@ -182,11 +182,11 @@ func (d *Server) hello(cmd string) {
 
 func (d *Server) start() {
 	if d.started {
-		d.outputChan <- messageError("start", "Discovery already STARTed")
+		d.outputChan <- messageError("start", "Monitor already STARTed")
 		return
 	}
 	if d.syncStarted {
-		d.outputChan <- messageError("start", "Discovery already START_SYNCed, cannot START")
+		d.outputChan <- messageError("start", "Monitor already START_SYNCed, cannot START")
 		return
 	}
 	d.cachedPorts = map[string]*Port{}
@@ -215,11 +215,11 @@ func (d *Server) errorCallback(msg string) {
 
 func (d *Server) list() {
 	if !d.started {
-		d.outputChan <- messageError("list", "Discovery not STARTed")
+		d.outputChan <- messageError("list", "Monitor not STARTed")
 		return
 	}
 	if d.syncStarted {
-		d.outputChan <- messageError("list", "discovery already START_SYNCed, LIST not allowed")
+		d.outputChan <- messageError("list", "monitor already START_SYNCed, LIST not allowed")
 		return
 	}
 	if d.cachedErr != "" {
@@ -238,11 +238,11 @@ func (d *Server) list() {
 
 func (d *Server) startSync() {
 	if d.syncStarted {
-		d.outputChan <- messageError("start_sync", "Discovery already START_SYNCed")
+		d.outputChan <- messageError("start_sync", "Monitor already START_SYNCed")
 		return
 	}
 	if d.started {
-		d.outputChan <- messageError("start_sync", "Discovery already STARTed, cannot START_SYNC")
+		d.outputChan <- messageError("start_sync", "Monitor already STARTed, cannot START_SYNC")
 		return
 	}
 	if err := d.impl.StartSync(d.syncEvent, d.errorEvent); err != nil {
@@ -255,7 +255,7 @@ func (d *Server) startSync() {
 
 func (d *Server) stop() {
 	if !d.syncStarted && !d.started {
-		d.outputChan <- messageError("stop", "Discovery already STOPped")
+		d.outputChan <- messageError("stop", "Monitor already STOPped")
 		return
 	}
 	if err := d.impl.Stop(); err != nil {

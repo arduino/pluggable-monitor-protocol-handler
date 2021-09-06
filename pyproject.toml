@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pluggable-discovery-protocol-handler"
+name = "pluggable-monitor-protocol-handler"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]

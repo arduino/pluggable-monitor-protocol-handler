@@ -2,23 +2,23 @@ version: "3"
 
 vars:
   DIST_DIR: "dist"
-  DUMMY_DISCOVERY_VERSION:
+  DUMMY_MONITOR_VERSION:
     sh: echo "$(git describe --tags --dirty --broken)"
-  DUMMY_DISCOVERY_TIMESTAMP:
+  DUMMY_MONITOR_TIMESTAMP:
     sh: echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  DUMMY_DISCOVERY_LDFLAGS: >
-    -X github.com/arduino/pluggable-discovery-protocol-handler/dummy-discovery/args.Tag={{.DUMMY_DISCOVERY_VERSION}}
-    -X github.com/arduino/pluggable-discovery-protocol-handler/dummy-discovery/args.Timestamp={{.DUMMY_DISCOVERY_TIMESTAMP}}
+  DUMMY_MONITOR_LDFLAGS: >
+    -X github.com/arduino/pluggable-monitor-protocol-handler/dummy-monitor/args.Tag={{.DUMMY_MONITOR_VERSION}}
+    -X github.com/arduino/pluggable-monitor-protocol-handler/dummy-monitor/args.Timestamp={{.DUMMY_MONITOR_TIMESTAMP}}
   DEFAULT_GO_PACKAGES:
     sh: echo $(go list ./... | tr '\n' ' ')
 
 tasks:
-  build-dummy-discovery:
-    desc: Build the dummy-discovery client example
+  build-dummy-monitor:
+    desc: Build the dummy-monitor client example
     vars:
-      EXECUTABLE: dummy-discovery{{if eq OS "windows"}}.exe{{end}}
+      EXECUTABLE: dummy-monitor{{if eq OS "windows"}}.exe{{end}}
     cmds:
-      - go build -o dist/{{.EXECUTABLE}} -v -ldflags '{{.DUMMY_DISCOVERY_LDFLAGS}}' ./dummy-discovery
+      - go build -o dist/{{.EXECUTABLE}} -v -ldflags '{{.DUMMY_MONITOR_LDFLAGS}}' ./dummy-monitor
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-workflows-task/Taskfile.yml
   ci:validate:

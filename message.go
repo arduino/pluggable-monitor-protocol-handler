@@ -1,5 +1,5 @@
 //
-// This file is part of pluggable-discovery-protocol-handler.
+// This file is part of pluggable-monitor-protocol-handler.
 //
 // Copyright 2021 ARDUINO SA (http://www.arduino.cc/)
 //
@@ -15,7 +15,7 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-package discovery
+package monitor
 
 type message struct {
 	EventType       string   `json:"eventType"`

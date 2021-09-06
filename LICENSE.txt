@@ -1,9 +1,9 @@
-This file includes licensing information for serial-discovery
+This file includes licensing information for serial-monitor
 
 Copyright (c) 2018 ARDUINO SA (www.arduino.cc)
 
 The software is released under the GNU General Public License, which covers the main body
-of the serial-discovery code. The terms of this license can be found at:
+of the serial-monitor code. The terms of this license can be found at:
 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 You can be released from the requirements of the above licenses by purchasing

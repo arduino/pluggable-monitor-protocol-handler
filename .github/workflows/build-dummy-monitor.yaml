@@ -1,4 +1,4 @@
-name: Build dummy discovery
+name: Build dummy monitor
 
 on:
   push:
@@ -26,4 +26,4 @@ jobs:
           go-version: "1.16"
 
       - name: Build
-        run: task build-dummy-discovery
+        run: task build-dummy-monitor

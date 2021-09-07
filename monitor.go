@@ -55,31 +55,12 @@ type Monitor interface {
 	// and the protocolVersion negotiated with the client.
 	Hello(userAgent string, protocolVersion int) error
 
-	// StartSync is called to put the monitor in event mode. When the
-	// function returns the monitor must send port events ("add" or "remove")
-	// using the eventCB function.
-	StartSync(eventCB EventCallback, errorCB ErrorCallback) error
-
-	// Stop stops the monitor internal subroutines. If the monitor is
-	// in event mode it must stop sending events through the eventCB previously
-	// set.
-	Stop() error
+	Describe() (*PortDescriptor, error)
 
 	// Quit is called just before the server terminates. This function can be
 	// used by the monitor as a last chance gracefully close resources.
 	Quit()
 }
-
-// EventCallback is a callback function to call to transmit port
-// metadata when the monitor is in "sync" mode and a new event
-// is detected.
-type EventCallback func(event string, port *Port)
-
-// ErrorCallback is a callback function to signal unrecoverable errors to the
-// client while the monitor is in event mode. Once the monitor signal an
-// error it means that no more port-events will be delivered until the client
-// performs a STOP+START_SYNC cycle.
-type ErrorCallback func(err string)
 
 // A Server is a pluggable monitor protocol handler,
 // it must be created using the NewServer function.
@@ -89,10 +70,6 @@ type Server struct {
 	userAgent          string
 	reqProtocolVersion int
 	initialized        bool
-	started            bool
-	syncStarted        bool
-	cachedPorts        map[string]*Port
-	cachedErr          string
 }
 
 // NewServer creates a new monitor server backed by the
@@ -132,14 +109,6 @@ func (d *Server) Run(in io.Reader, out io.Writer) error {
 		switch cmd {
 		case "HELLO":
 			d.hello(fullCmd[6:])
-		case "START":
-			d.start()
-		case "LIST":
-			d.list()
-		case "START_SYNC":
-			d.startSync()
-		case "STOP":
-			d.stop()
 		case "QUIT":
 			d.impl.Quit()
 			d.outputChan <- messageOk("quit")
@@ -178,102 +147,6 @@ func (d *Server) hello(cmd string) {
 		Message:         "OK",
 	}
 	d.initialized = true
-}
-
-func (d *Server) start() {
-	if d.started {
-		d.outputChan <- messageError("start", "Monitor already STARTed")
-		return
-	}
-	if d.syncStarted {
-		d.outputChan <- messageError("start", "Monitor already START_SYNCed, cannot START")
-		return
-	}
-	d.cachedPorts = map[string]*Port{}
-	d.cachedErr = ""
-	if err := d.impl.StartSync(d.eventCallback, d.errorCallback); err != nil {
-		d.outputChan <- messageError("start", "Cannot START: "+err.Error())
-		return
-	}
-	d.started = true
-	d.outputChan <- messageOk("start")
-}
-
-func (d *Server) eventCallback(event string, port *Port) {
-	id := port.Address + "|" + port.Protocol
-	if event == "add" {
-		d.cachedPorts[id] = port
-	}
-	if event == "remove" {
-		delete(d.cachedPorts, id)
-	}
-}
-
-func (d *Server) errorCallback(msg string) {
-	d.cachedErr = msg
-}
-
-func (d *Server) list() {
-	if !d.started {
-		d.outputChan <- messageError("list", "Monitor not STARTed")
-		return
-	}
-	if d.syncStarted {
-		d.outputChan <- messageError("list", "monitor already START_SYNCed, LIST not allowed")
-		return
-	}
-	if d.cachedErr != "" {
-		d.outputChan <- messageError("list", d.cachedErr)
-		return
-	}
-	ports := []*Port{}
-	for _, port := range d.cachedPorts {
-		ports = append(ports, port)
-	}
-	d.outputChan <- &message{
-		EventType: "list",
-		Ports:     &ports,
-	}
-}
-
-func (d *Server) startSync() {
-	if d.syncStarted {
-		d.outputChan <- messageError("start_sync", "Monitor already START_SYNCed")
-		return
-	}
-	if d.started {
-		d.outputChan <- messageError("start_sync", "Monitor already STARTed, cannot START_SYNC")
-		return
-	}
-	if err := d.impl.StartSync(d.syncEvent, d.errorEvent); err != nil {
-		d.outputChan <- messageError("start_sync", "Cannot START_SYNC: "+err.Error())
-		return
-	}
-	d.syncStarted = true
-	d.outputChan <- messageOk("start_sync")
-}
-
-func (d *Server) stop() {
-	if !d.syncStarted && !d.started {
-		d.outputChan <- messageError("stop", "Monitor already STOPped")
-		return
-	}
-	if err := d.impl.Stop(); err != nil {
-		d.outputChan <- messageError("stop", "Cannot STOP: "+err.Error())
-		return
-	}
-	d.started = false
-	if d.syncStarted {
-		d.syncStarted = false
-	}
-	d.outputChan <- messageOk("stop")
-}
-
-func (d *Server) syncEvent(event string, port *Port) {
-	d.outputChan <- &message{
-		EventType: event,
-		Port:      port,
-	}
 }
 
 func (d *Server) errorEvent(msg string) {

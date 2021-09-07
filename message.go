@@ -25,8 +25,13 @@ type message struct {
 	PortDescription *PortDescriptor `json:"port_description,omitempty"`
 }
 
-type PortDescriptor map[string]*PortParameterDescriptor
+// PortDescriptor is a struct to describe the characteristic of a port
+type PortDescriptor struct {
+	Protocol               string                              `json:"protocol,omitempty"`
+	ConfigurationParameter map[string]*PortParameterDescriptor `json:"configuration_parameters,omitempty"`
+}
 
+// PortParameterDescriptor contains characteristics for every parameter
 type PortParameterDescriptor struct {
 	Label    string   `json:"label,omitempty"`
 	Type     string   `json:"type,omitempty"`

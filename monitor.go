@@ -55,10 +55,20 @@ type Monitor interface {
 	// and the protocolVersion negotiated with the client.
 	Hello(userAgent string, protocolVersion int) error
 
+	// Describe is called to obtain the description of the comunication port
 	Describe() (*PortDescriptor, error)
 
+	// Configure allows to set the configuration parameters for the comunication port
+	Configure(parameterName string, value string) error
+
+	// Open allows to open a comunication with the board using TCP/IP
+	Open(ipAddress string, boardPort string) error
+
+	// Close will close the currently open port and TCP/IP connection
+	Close() error
+
 	// Quit is called just before the server terminates. This function can be
-	// used by the monitor as a last chance gracefully close resources.
+	// used by the monitor as a last chance to gracefully close resources.
 	Quit()
 }
 
@@ -109,6 +119,14 @@ func (d *Server) Run(in io.Reader, out io.Writer) error {
 		switch cmd {
 		case "HELLO":
 			d.hello(fullCmd[6:])
+		case "DESCRIBE":
+			d.describe()
+		case "CONFIGURE":
+			d.configure(fullCmd[10:])
+		case "OPEN":
+			d.open(fullCmd[5:])
+		case "CLOSE":
+			d.close()
 		case "QUIT":
 			d.impl.Quit()
 			d.outputChan <- messageOk("quit")
@@ -147,6 +165,22 @@ func (d *Server) hello(cmd string) {
 		Message:         "OK",
 	}
 	d.initialized = true
+}
+
+func (d *Server) describe() {
+
+}
+
+func (d *Server) configure(cmd string) {
+
+}
+
+func (d *Server) open(cmd string) {
+
+}
+
+func (d *Server) close() {
+
 }
 
 func (d *Server) errorEvent(msg string) {

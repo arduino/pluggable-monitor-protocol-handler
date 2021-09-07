@@ -18,12 +18,20 @@
 package monitor
 
 type message struct {
-	EventType       string   `json:"eventType"`
-	Message         string   `json:"message,omitempty"`
-	Error           bool     `json:"error,omitempty"`
-	ProtocolVersion int      `json:"protocolVersion,omitempty"`
-	Port            *Port    `json:"port,omitempty"`
-	Ports           *[]*Port `json:"ports,omitempty"`
+	EventType       string          `json:"eventType"`
+	Message         string          `json:"message,omitempty"`
+	Error           bool            `json:"error,omitempty"`
+	ProtocolVersion int             `json:"protocolVersion,omitempty"`
+	PortDescription *PortDescriptor `json:"port_description,omitempty"`
+}
+
+type PortDescriptor map[string]*PortParameterDescriptor
+
+type PortParameterDescriptor struct {
+	Label    string   `json:"label,omitempty"`
+	Type     string   `json:"type,omitempty"`
+	Values   []string `json:"value,omitempty"`
+	Selected string   `json:"selected,omitempty"`
 }
 
 func messageOk(event string) *message {

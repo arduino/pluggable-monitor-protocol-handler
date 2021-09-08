@@ -55,13 +55,13 @@ type Monitor interface {
 	// and the protocolVersion negotiated with the client.
 	Hello(userAgent string, protocolVersion int) error
 
-	// Describe is called to obtain the description of the comunication port
+	// Describe is called to obtain the description of the communication port
 	Describe() (*PortDescriptor, error)
 
-	// Configure allows to set the configuration parameters for the comunication port
+	// Configure allows to set the configuration parameters for the communication port
 	Configure(parameterName string, value string) error
 
-	// Open allows to open a comunication with the board using TCP/IP
+	// Open allows to open a communication with the board using TCP/IP
 	Open(ipAddress string, boardPort string) error
 
 	// Close will close the currently open port and TCP/IP connection

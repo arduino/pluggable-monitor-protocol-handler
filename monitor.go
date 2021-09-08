@@ -168,7 +168,22 @@ func (d *Server) hello(cmd string) {
 }
 
 func (d *Server) describe() {
-
+	if !d.initialized {
+		d.outputChan <- messageError("describe", "Monitor not STARTed")
+		return
+	}
+	var port_description *PortDescriptor
+	port_description, err := d.impl.Describe()
+	if err != nil {
+		d.outputChan <- messageError("hello", err.Error())
+		return
+	}
+	d.outputChan <- &message{
+		EventType:       "describe",
+		Message:         "OK",
+		PortDescription: port_description,
+	}
+	d.initialized = true
 }
 
 func (d *Server) configure(cmd string) {

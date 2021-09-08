@@ -172,8 +172,8 @@ func (d *Server) describe() {
 		d.outputChan <- messageError("describe", "Monitor not STARTed")
 		return
 	}
-	var port_description *PortDescriptor
-	port_description, err := d.impl.Describe()
+	var portDescription *PortDescriptor
+	portDescription, err := d.impl.Describe()
 	if err != nil {
 		d.outputChan <- messageError("hello", err.Error())
 		return
@@ -181,9 +181,8 @@ func (d *Server) describe() {
 	d.outputChan <- &message{
 		EventType:       "describe",
 		Message:         "OK",
-		PortDescription: port_description,
+		PortDescription: portDescription,
 	}
-	d.initialized = true
 }
 
 func (d *Server) configure(cmd string) {

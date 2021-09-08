@@ -35,6 +35,24 @@ type dummyMonitor struct {
 	closeChan      chan<- bool
 }
 
+var settings = &monitor.PortDescriptor{
+	Protocol: "test",
+	ConfigurationParameter: map[string]*monitor.PortParameterDescriptor{
+		"speed": {
+			Label:    "Baudrate",
+			Type:     "enum",
+			Values:   []string{"9600", "19200", "38400", "57600", "115200"},
+			Selected: "9600",
+		},
+		"echo": {
+			Label:    "echo",
+			Type:     "enum",
+			Values:   []string{"on", "off"},
+			Selected: "on",
+		},
+	},
+}
+
 func main() {
 	args.Parse()
 	dummy := &dummyMonitor{}
@@ -53,7 +71,7 @@ func (d *dummyMonitor) Hello(userAgent string, protocol int) error {
 
 //TODO implement
 func (d *dummyMonitor) Describe() (*monitor.PortDescriptor, error) {
-	return nil, nil
+	return settings, nil
 }
 
 //TODO implement

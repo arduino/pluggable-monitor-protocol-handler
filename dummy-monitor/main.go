@@ -69,14 +69,22 @@ func (d *dummyMonitor) Hello(userAgent string, protocol int) error {
 	return nil
 }
 
-//TODO implement
 func (d *dummyMonitor) Describe() (*monitor.PortDescriptor, error) {
 	return settings, nil
 }
 
-//TODO implement
 func (d *dummyMonitor) Configure(parameterName string, value string) error {
-	return nil
+	if settings.ConfigurationParameter[parameterName] == nil {
+		return fmt.Errorf("could not find parameter named %s", parameterName)
+	}
+	values := settings.ConfigurationParameter[parameterName].Values
+	for _, i := range values {
+		if i == value {
+			settings.ConfigurationParameter[parameterName].Selected = value
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid value for parameter %s: %s", parameterName, value)
 }
 
 //TODO implement

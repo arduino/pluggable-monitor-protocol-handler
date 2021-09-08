@@ -186,7 +186,26 @@ func (d *Server) describe() {
 }
 
 func (d *Server) configure(cmd string) {
-
+	if !d.initialized {
+		d.outputChan <- messageError("configure", "Monitor not STARTed")
+		return
+	}
+	re := regexp.MustCompile(`^(\w+) (\w+)$`)
+	matches := re.FindStringSubmatch(cmd)
+	if len(matches) != 3 {
+		d.outputChan <- messageError("configure", "Invalid CONFIGURE command")
+		return
+	}
+	parameterName := matches[1]
+	value := matches[2]
+	if err := d.impl.Configure(parameterName, value); err != nil {
+		d.outputChan <- messageError("configure", err.Error())
+		return
+	}
+	d.outputChan <- &message{
+		EventType: "configure",
+		Message:   "OK",
+	}
 }
 
 func (d *Server) open(cmd string) {

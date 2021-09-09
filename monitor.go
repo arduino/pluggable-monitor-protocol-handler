@@ -169,13 +169,12 @@ func (d *Server) hello(cmd string) {
 
 func (d *Server) describe() {
 	if !d.initialized {
-		d.outputChan <- messageError("describe", "Monitor not STARTed")
+		d.outputChan <- messageError("describe", "Monitor not initialized")
 		return
 	}
-	var portDescription *PortDescriptor
 	portDescription, err := d.impl.Describe()
 	if err != nil {
-		d.outputChan <- messageError("hello", err.Error())
+		d.outputChan <- messageError("describe", err.Error())
 		return
 	}
 	d.outputChan <- &message{
@@ -187,10 +186,10 @@ func (d *Server) describe() {
 
 func (d *Server) configure(cmd string) {
 	if !d.initialized {
-		d.outputChan <- messageError("configure", "Monitor not STARTed")
+		d.outputChan <- messageError("configure", "Monitor not initialized")
 		return
 	}
-	re := regexp.MustCompile(`^(\w+) (\w+)$`)
+	re := regexp.MustCompile(`^([\w.-]+) (.+)$`)
 	matches := re.FindStringSubmatch(cmd)
 	if len(matches) != 3 {
 		d.outputChan <- messageError("configure", "Invalid CONFIGURE command")
@@ -216,8 +215,6 @@ func (d *Server) close() {
 
 }
 
-func (d *Server) errorEvent(msg string) {
-	d.outputChan <- messageError("start_sync", msg)
 }
 
 func (d *Server) outputProcessor(outWriter io.Writer) {

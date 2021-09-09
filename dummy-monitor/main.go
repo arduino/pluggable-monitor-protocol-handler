@@ -18,10 +18,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
 
-	"github.com/arduino/go-properties-orderedmap"
 	monitor "github.com/arduino/pluggable-monitor-protocol-handler"
 	"github.com/arduino/pluggable-monitor-protocol-handler/dummy-monitor/args"
 )
@@ -52,6 +53,8 @@ var settings = &monitor.PortDescriptor{
 		},
 	},
 }
+
+var openedPort *dummyPort
 
 func main() {
 	args.Parse()
@@ -87,13 +90,20 @@ func (d *dummyMonitor) Configure(parameterName string, value string) error {
 	return fmt.Errorf("invalid value for parameter %s: %s", parameterName, value)
 }
 
-//TODO implement
-func (d *dummyMonitor) Open(ipAddress string, boardPort string) error {
-	return nil
+func (d *dummyMonitor) Open(boardPort string) (io.ReadWriter, error) {
+	if openedPort != nil {
+		return nil, fmt.Errorf("port already opened: %s", openedPort.portName)
+	}
+	openedPort = newDummyPort(boardPort)
+	return openedPort, nil
 }
 
-//TODO implement
 func (d *dummyMonitor) Close() error {
+	if openedPort == nil {
+		return errors.New("port already closed")
+	}
+	openedPort.Close()
+	openedPort = nil
 	return nil
 }
 

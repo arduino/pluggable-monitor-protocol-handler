@@ -101,21 +101,3 @@ func (d *dummyMonitor) Close() error {
 // In a real implementation it can be used to tear down resources
 // used to monitor Ports.
 func (d *dummyMonitor) Quit() {}
-
-var dummyCounter = 0
-
-// createDummyPort creates a Port with fake data
-func createDummyPort() *monitor.Port {
-	dummyCounter++
-	return &monitor.Port{
-		Address:       fmt.Sprintf("%d", dummyCounter),
-		AddressLabel:  "Dummy upload port",
-		Protocol:      "dummy",
-		ProtocolLabel: "Dummy protocol",
-		Properties: properties.NewFromHashmap(map[string]string{
-			"vid": "0x2341",
-			"pid": "0x0041",
-			"mac": fmt.Sprintf("%d", dummyCounter*384782),
-		}),
-	}
-}

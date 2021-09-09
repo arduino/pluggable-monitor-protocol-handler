@@ -219,104 +219,98 @@ If the client sends an invalid or malformed command, the monitor should answer w
 ```
 fis
 ### Example of usage
-<!-- TODO -->
+
 A possible transcript of the monitor usage:
 
 ```
-HELLO 1 "arduino-cli"
+HELLO 1 "test"
 {
   "eventType": "hello",
   "message": "OK",
   "protocolVersion": 1
 }
-START
+DESCRIBE
 {
-  "eventType": "start",
-  "message": "OK"
-}
-LIST
-{
-  "eventType": "list",
-  "ports": [
-    {
-      "address": "1",
-      "label": "Dummy upload port",
-      "protocol": "dummy",
-      "protocolLabel": "Dummy protocol",
-      "properties": {
-        "mac": "73622384782",
-        "pid": "0x0041",
-        "vid": "0x2341"
+  "eventType": "describe",
+  "message": "OK",
+  "port_description": {
+    "protocol": "test",
+    "configuration_parameters": {
+      "echo": {
+        "label": "echo",
+        "type": "enum",
+        "value": [
+          "on",
+          "off"
+        ],
+        "selected": "on"
+      },
+      "speed": {
+        "label": "Baudrate",
+        "type": "enum",
+        "value": [
+          "9600",
+          "19200",
+          "38400",
+          "57600",
+          "115200"
+        ],
+        "selected": "9600"
       }
     }
-  ]
+  }
 }
-STOP
+CONFIGURE speed 19200
 {
-  "eventType": "stop",
+  "eventType": "configure",
   "message": "OK"
 }
-START_SYNC
+DESCRIBE
 {
-  "eventType": "start_sync",
+  "eventType": "describe",
+  "message": "OK",
+  "port_description": {
+    "protocol": "test",
+    "configuration_parameters": {
+      "echo": {
+        "label": "echo",
+        "type": "enum",
+        "value": [
+          "on",
+          "off"
+        ],
+        "selected": "on"
+      },
+      "speed": {
+        "label": "Baudrate",
+        "type": "enum",
+        "value": [
+          "9600",
+          "19200",
+          "38400",
+          "57600",
+          "115200"
+        ],
+        "selected": "19200"
+      }
+    }
+  }
+}
+OPEN 127.0.0.1:5678 "test"
+{
+  "eventType": "open",
   "message": "OK"
 }
+CLOSE
 {
-  "eventType": "add",
-  "port": {
-    "address": "2",
-    "label": "Dummy upload port",
-    "protocol": "dummy",
-    "protocolLabel": "Dummy protocol",
-    "properties": {
-      "mac": "147244769564",
-      "pid": "0x0041",
-      "vid": "0x2341"
-    }
-  }
-}
-{
-  "eventType": "add",
-  "port": {
-    "address": "3",
-    "label": "Dummy upload port",
-    "protocol": "dummy",
-    "protocolLabel": "Dummy protocol",
-    "properties": {
-      "mac": "220867154346",
-      "pid": "0x0041",
-      "vid": "0x2341"
-    }
-  }
-}
-{
-  "eventType": "add",
-  "port": {
-    "address": "4",
-    "label": "Dummy upload port",
-    "protocol": "dummy",
-    "protocolLabel": "Dummy protocol",
-    "properties": {
-      "mac": "294489539128",
-      "pid": "0x0041",
-      "vid": "0x2341"
-    }
-  }
-}
-{
-  "eventType": "remove",
-  "port": {
-    "address": "4",
-    "protocol": "dummy"
-  }
+  "eventType": "close",
+  "message": "OK"
 }
 QUIT
-{
-  "eventType": "quit",
-  "message": "OK"
-}
 $
 ```
+
+On another terminal tab to test it you can run `nc -l -p 5678` before running the `OPEN 127.0.0.1:5678 "test"` command. After that you can write messages in that terminal tab and see them being echoed.
 
 ## Security
 

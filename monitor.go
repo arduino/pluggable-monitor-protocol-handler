@@ -31,11 +31,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/arduino/go-properties-orderedmap"
+	"github.com/hashicorp/go-multierror"
 )
 
 // Port is a descriptor for a board port
@@ -62,7 +65,7 @@ type Monitor interface {
 	Configure(parameterName string, value string) error
 
 	// Open allows to open a communication with the board using TCP/IP
-	Open(ipAddress string, boardPort string) error
+	Open(boardPort string) (io.ReadWriter, error)
 
 	// Close will close the currently open port and TCP/IP connection
 	Close() error
@@ -80,6 +83,8 @@ type Server struct {
 	userAgent          string
 	reqProtocolVersion int
 	initialized        bool
+	clientConn         net.Conn
+	closeFuncMutex     sync.Mutex
 }
 
 // NewServer creates a new monitor server backed by the
@@ -126,7 +131,7 @@ func (d *Server) Run(in io.Reader, out io.Writer) error {
 		case "OPEN":
 			d.open(fullCmd[5:])
 		case "CLOSE":
-			d.close()
+			d.close("")
 		case "QUIT":
 			d.impl.Quit()
 			d.outputChan <- messageOk("quit")
@@ -208,13 +213,76 @@ func (d *Server) configure(cmd string) {
 }
 
 func (d *Server) open(cmd string) {
-
+	if !d.initialized {
+		d.outputChan <- messageError("open", "Monitor not initialized")
+		return
+	}
+	parameters := strings.SplitN(cmd, " ", 2)
+	if len(parameters) != 2 {
+		d.outputChan <- messageError("open", "Invalid OPEN command")
+		return
+	}
+	address := parameters[0]
+	portName := parameters[1]
+	port, err := d.impl.Open(portName)
+	if err != nil {
+		d.outputChan <- messageError("open", err.Error())
+		return
+	}
+	d.clientConn, err = net.Dial("tcp", address)
+	if err != nil {
+		d.impl.Close()
+		d.outputChan <- messageError("open", err.Error())
+		return
+	}
+	// io.Copy is used to bridge the Client's TCP connection to the port one and vice versa
+	go func() {
+		_, err := io.Copy(port, d.clientConn) // Copy is blocking, so we run it insiede a gorutine
+		if err != nil {
+			d.close(err.Error())
+		} else {
+			d.close("lost TCP/IP connection with the client!")
+		}
+	}()
+	go func() {
+		_, err := io.Copy(d.clientConn, port) // Copy is blocking, so we run it insiede a gorutine
+		if err != nil {
+			d.close(err.Error())
+		} else {
+			d.close("lost connection with the port")
+		}
+	}()
+	d.outputChan <- &message{
+		EventType: "open",
+		Message:   "OK",
+	}
 }
 
-func (d *Server) close() {
-
-}
-
+func (d *Server) close(messageErr string) {
+	d.closeFuncMutex.Lock()
+	defer d.closeFuncMutex.Unlock()
+	if d.clientConn == nil {
+		// TODO
+		// d.outputChan <- messageError("close", "port already closed")
+		return
+	}
+	connErr := d.clientConn.Close()
+	portErr := d.impl.Close()
+	d.clientConn = nil
+	if messageErr != "" {
+		d.outputChan <- messageError("port_closed", messageErr)
+		return
+	}
+	if connErr != nil || portErr != nil {
+		var errs *multierror.Error
+		errs = multierror.Append(errs, connErr, portErr)
+		d.outputChan <- messageError("close", errs.Error())
+		return
+	}
+	d.outputChan <- &message{
+		EventType: "close",
+		Message:   "OK",
+	}
 }
 
 func (d *Server) outputProcessor(outWriter io.Writer) {

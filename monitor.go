@@ -252,8 +252,9 @@ func (d *Server) close(messageErr string) {
 	d.closeFuncMutex.Lock()
 	defer d.closeFuncMutex.Unlock()
 	if d.clientConn == nil {
-		// TODO
-		// d.outputChan <- messageError("close", "port already closed")
+		if messageErr == "" {
+			d.outputChan <- messageError("close", "port already closed")
+		}
 		return
 	}
 	connErr := d.clientConn.Close()

@@ -37,18 +37,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/arduino/go-properties-orderedmap"
 	"github.com/hashicorp/go-multierror"
 )
-
-// Port is a descriptor for a board port
-type Port struct {
-	Address       string          `json:"address"`
-	AddressLabel  string          `json:"label,omitempty"`
-	Protocol      string          `json:"protocol,omitempty"`
-	ProtocolLabel string          `json:"protocolLabel,omitempty"`
-	Properties    *properties.Map `json:"properties,omitempty"`
-}
 
 // Monitor is an interface that represents the business logic that
 // a pluggable monitor must implement. The communication protocol

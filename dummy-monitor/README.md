@@ -32,8 +32,8 @@ The response to the command is:
 ```json
 {
   "eventType": "hello",
-  "protocolVersion": 1,
-  "message": "OK"
+  "message": "OK",
+  "protocolVersion": 1
 }
 ```
 
@@ -43,40 +43,34 @@ The response to the command is:
 
 The `DESCRIBE` command returns a description of the communication port. The description will have metadata about the port configuration, and which parameters are available:
 
+<!-- prettier-ignore -->
 ```json
 {
-  "event": "describe",
-  "message": "ok",
+  "eventType": "describe",
+  "message": "OK",
   "port_description": {
-    "protocol": "serial",
+    "protocol": "test",
     "configuration_parameters": {
-      "baudrate": {
+      "echo": {
+        "label": "echo",
+        "type": "enum",
+        "value": [
+          "on",
+          "off"
+        ],
+        "selected": "on"
+      },
+      "speed": {
         "label": "Baudrate",
         "type": "enum",
-        "values": [
-          "300", "600", "750", "1200", "2400", "4800", "9600",
-          "19200", "38400", "57600", "115200", "230400", "460800",
-          "500000", "921600", "1000000", "2000000"
+        "value": [
+          "9600",
+          "19200",
+          "38400",
+          "57600",
+          "115200"
         ],
         "selected": "9600"
-      },
-      "parity": {
-        "label": "Parity",
-        "type": "enum",
-        "values": [ "N", "E", "O", "M", "S" ],
-        "selected": "N"
-      },
-      "bits": {
-        "label": "Data bits",
-        "type": "enum",
-        "values": [ "5", "6", "7", "8", "9" ],
-        "selected": "8"
-      },
-      "stop_bits": {
-        "label": "Stop bits",
-        "type": "enum",
-        "values": [ "1", "1.5", "2" ],
-        "selected": "1"
       }
     }
   }
@@ -87,7 +81,7 @@ Each parameter has a unique name (`baudrate`, `parity`, etc...), a `type` (in th
 
 The parameter name can not contain spaces, and the allowed characters in the name are alphanumerics, underscore `_`, dot `.`, and dash `-`.
 
-The `enum` types must have a list of possible `values`.
+The `enum` types must have a list of possible `value`.
 
 The client/IDE may expose these configuration values to the user via a config file or a GUI, in this case the `label` field may be used for a user readable description of the parameter.
 
@@ -101,8 +95,8 @@ The response to the command is:
 
 ```JSON
 {
-  "event": "configure",
-  "message": "ok",
+  "eventType": "configure",
+  "message": "OK"
 }
 ```
 
@@ -110,9 +104,9 @@ or if there is an error:
 
 ```JSON
 {
-  "event": "configure",
-  "error": true,
-  "message": "invalid value for parameter baudrate: 123456"
+  "eventType": "configure",
+  "message": "invalid value for parameter speed: 123456",
+  "error": true
 }
 ```
 
@@ -137,8 +131,8 @@ The answer to the `OPEN` command is:
 
 ```JSON
 {
-  "event": "open",
-  "message": "ok"
+  "eventType": "open",
+  "message": "OK"
 }
 ```
 
@@ -146,7 +140,7 @@ If the monitor tool cannot communicate with the board, or if the tool can not co
 
 ```JSON
 {
-  "event": "open",
+  "eventType": "open",
   "error": true,
   "message": "unknown port /dev/ttyACM23"
 }
@@ -158,7 +152,7 @@ Once the port is opened, it may be unexpectedly closed at any time due to hardwa
 
 ```JSON
 {
-  "event": "port_closed",
+  "eventType": "port_closed",
   "message": "serial port disappeared!"
 }
 ```
@@ -167,8 +161,9 @@ or
 
 ```JSON
 {
-  "event": "port_closed",
-  "message": "lost TCP/IP connection with the client!"
+  "eventType": "port_closed",
+  "message": "lost TCP/IP connection with the client!",
+  "error": true
 }
 ```
 
@@ -178,7 +173,7 @@ The `CLOSE` command will close the currently opened port and close the TCP/IP co
 
 ```JSON
 {
-  "event": "close",
+  "eventType": "close",
   "message": "ok"
 }
 ```
@@ -187,9 +182,9 @@ or in case of error
 
 ```JSON
 {
-  "event": "close",
-  "error": true,
-  "message": "port already closed"
+  "eventType": "close",
+  "message": "port already closed",
+  "error": true
 }
 ```
 
@@ -213,11 +208,11 @@ If the client sends an invalid or malformed command, the monitor should answer w
 ```JSON
 {
   "eventType": "command_error",
-  "error": true,
-  "message": "Unknown command XXXX"
+  "message": "Command XXXX not supported",
+  "error": true
 }
 ```
-fis
+
 ### Example of usage
 
 A possible transcript of the monitor usage:
@@ -307,6 +302,10 @@ CLOSE
   "message": "OK"
 }
 QUIT
+{
+  "eventType": "quit",
+  "message": "OK"
+}
 $
 ```
 

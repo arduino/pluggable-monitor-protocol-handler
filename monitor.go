@@ -36,6 +36,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 )
@@ -76,15 +77,21 @@ type Server struct {
 	initialized        bool
 	clientConn         net.Conn
 	closeFuncMutex     sync.Mutex
+	bufCfg             BufferConfig
 }
 
 // NewServer creates a new monitor server backed by the
 // provided pluggable monitor implementation. To start the server
 // use the Run method.
-func NewServer(impl Monitor) *Server {
-	return &Server{
-		impl: impl,
+func NewServer(impl Monitor, opts ...Option) *Server {
+	s := &Server{
+		impl:   impl,
+		bufCfg: BufferConfig{HighWaterMark: 1}, // default == unbuffered
 	}
+	for _, o := range opts {
+		o(s)
+	}
+	return s
 }
 
 // Run starts the protocol handling loop on the given input and
@@ -191,6 +198,64 @@ func (d *Server) configure(cmd string) {
 	}
 	parameterName := matches[1]
 	value := matches[2]
+
+	switch parameterName {
+	case "_buffer.hwm":
+		if v, err := strconv.Atoi(value); err == nil && v >= 1 {
+			d.bufCfg.HighWaterMark = v
+			d.outputMessage(messageOk("configure"))
+			return
+		}
+		d.outputMessage(messageError("configure", "invalid _buffer.hwm"))
+		return
+	case "_buffer.interval_ms":
+		if v, err := strconv.Atoi(value); err == nil && v >= 0 {
+			d.bufCfg.FlushInterval = time.Duration(v) * time.Millisecond
+			d.outputMessage(messageOk("configure"))
+			return
+		}
+		d.outputMessage(messageError("configure", "invalid _buffer.interval_ms"))
+		return
+	case "_buffer.line":
+		switch strings.ToLower(value) {
+		case "true", "1", "yes", "on":
+			d.bufCfg.LineBuffering = true
+		case "false", "0", "no", "off":
+			d.bufCfg.LineBuffering = false
+		default:
+			d.outputMessage(messageError("configure", "invalid _buffer.line"))
+			return
+		}
+		d.outputMessage(messageOk("configure"))
+		return
+	case "_buffer.queue":
+		if v, err := strconv.Atoi(value); err == nil && v >= 1 {
+			d.bufCfg.FlushQueueCapacity = v
+			d.outputMessage(messageOk("configure"))
+			return
+		}
+		d.outputMessage(messageError("configure", "invalid _buffer.queue"))
+		return
+	case "_buffer.overflow":
+		switch strings.ToLower(value) {
+		case "drop", "wait":
+			d.bufCfg.OverflowStrategy = strings.ToLower(value)
+			d.outputMessage(messageOk("configure"))
+			return
+		default:
+			d.outputMessage(messageError("configure", "invalid _buffer.overflow"))
+			return
+		}
+	case "_buffer.overflow_wait_ms":
+		if v, err := strconv.Atoi(value); err == nil && v >= 0 {
+			d.bufCfg.OverflowWait = time.Duration(v) * time.Millisecond
+			d.outputMessage(messageOk("configure"))
+			return
+		}
+		d.outputMessage(messageError("configure", "invalid _buffer.overflow_wait_ms"))
+		return
+	}
+
 	if err := d.impl.Configure(parameterName, value); err != nil {
 		d.outputMessage(messageError("configure", err.Error()))
 		return
@@ -224,21 +289,47 @@ func (d *Server) open(cmd string) {
 		d.outputMessage(messageError("open", err.Error()))
 		return
 	}
-	// io.Copy is used to bridge the Client's TCP connection to the port one and vice versa
+	conn := d.clientConn
+	// Port -> TCP (with optional buffering)
 	go func() {
-		_, err := io.Copy(port, d.clientConn) // Copy is blocking, so we run it insiede a gorutine
-		if err != nil {
-			d.close(err.Error())
-		} else {
-			d.close("lost TCP/IP connection with the client!")
-		}
+		defer d.close("port_disconnected")
+		agg := newAggregator(d.bufCfg)
+		defer agg.close()
+
+		// read from port in small chunks and feed aggregator
+		go func() {
+			defer agg.close()
+			buf := make([]byte, 256)
+			for {
+				n, err := port.Read(buf)
+				if n > 0 {
+					agg.addChunk(buf[:n])
+				}
+				if err != nil {
+					return
+				}
+			}
+		}()
+
+		// drain aggregated payloads to TCP
+		_ = agg.drainTo(conn)
 	}()
+	// TCP -> Port (no buffering; low latency for user input)
 	go func() {
-		_, err := io.Copy(d.clientConn, port) // Copy is blocking, so we run it insiede a gorutine
-		if err != nil {
-			d.close(err.Error())
-		} else {
-			d.close("lost connection with the port")
+		defer d.close("client_disconnected")
+		// Capture the current clientConn into a local variable to avoid
+		// racy reads of d.clientConn while close() may set it to nil.
+		buf := make([]byte, 256)
+		for {
+			n, err := conn.Read(buf)
+			if n > 0 {
+				if _, werr := port.Write(buf[:n]); werr != nil {
+					return
+				}
+			}
+			if err != nil {
+				return
+			}
 		}
 	}()
 	d.outputMessage(&message{

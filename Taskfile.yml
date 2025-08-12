@@ -147,3 +147,8 @@ tasks:
     desc: Format Go code
     cmds:
       - go fmt {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
+
+  go:test:
+    desc: Test Go code
+    cmds:
+      - go test -v -race -covermode=atomic -coverprofile=coverage.out ./...

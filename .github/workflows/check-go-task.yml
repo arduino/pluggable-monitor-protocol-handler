@@ -124,6 +124,9 @@ jobs:
 
     strategy:
       fail-fast: false
+      matrix:
+        module:
+          - path: ./
 
     steps:
       - name: Checkout repository
@@ -141,6 +144,7 @@ jobs:
           version: 3.x
 
       - name: Run tests
+        working-directory: ${{ matrix.module.path }}
         run: task go:test
 
   check-config:

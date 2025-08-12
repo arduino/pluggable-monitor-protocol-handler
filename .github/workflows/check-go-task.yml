@@ -118,6 +118,25 @@ jobs:
       - name: Check formatting
         run: git diff --color --exit-code
 
+  run-tests:
+    name: run-tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run tests
+        run: task go:test
+
   check-config:
     name: check-config (${{ matrix.module.path }})
     runs-on: ubuntu-latest

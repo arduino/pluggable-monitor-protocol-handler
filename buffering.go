@@ -24,6 +24,10 @@ import (
 	"time"
 )
 
+// BufferConfig controls how bytes coming from the board (port) are aggregated
+// into larger chunks before being written to the TCP client. All fields are
+// optional; invalid or zero values are normalized to sensible defaults via
+// normalized().
 type BufferConfig struct {
 	HighWaterMark int           // >= 1
 	FlushInterval time.Duration // 0 to disable time-based flush
@@ -57,8 +61,11 @@ func (c BufferConfig) normalized() BufferConfig {
 	return cfg
 }
 
+// Option is a functional option used to configure a Server at construction time.
 type Option func(*Server)
 
+// WithBufferConfig sets the Server's buffering behavior. The provided cfg is
+// normalized (e.g., min values enforced) before being stored on the Server.
 func WithBufferConfig(cfg BufferConfig) Option {
 	return func(s *Server) {
 		s.bufCfg = cfg.normalized()

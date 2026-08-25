@@ -321,10 +321,7 @@ e-mail contact: security@arduino.cc
 
 ## License
 
-Copyright (c) 2021 ARDUINO SA (www.arduino.cc)
-
-The software is released under the GNU General Public License, which covers the main body
-of the serial-monitor code. The terms of this license can be found at:
-https://www.gnu.org/licenses/gpl-3.0.en.html
-
-See [LICENSE.txt](https://github.com/arduino/pluggable-monitor-protocol-handler/blob/master/LICENSE.txt) for details.
+```txt
+SPDX-FileCopyrightText: Arduino s.r.l. and/or its affiliated companies
+SPDX-License-Identifier: GPL-3.0-or-later
+```

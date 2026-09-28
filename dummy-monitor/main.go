@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	monitor "github.com/arduino/pluggable-monitor-protocol-handler"
 	"github.com/arduino/pluggable-monitor-protocol-handler/dummy-monitor/args"
@@ -69,11 +70,9 @@ func (d *dummyMonitor) Configure(parameterName string, value string) error {
 		return fmt.Errorf("could not find parameter named %s", parameterName)
 	}
 	values := settings.ConfigurationParameter[parameterName].Values
-	for _, i := range values {
-		if i == value {
-			settings.ConfigurationParameter[parameterName].Selected = value
-			return nil
-		}
+	if slices.Contains(values, value) {
+		settings.ConfigurationParameter[parameterName].Selected = value
+		return nil
 	}
 	return fmt.Errorf("invalid value for parameter %s: %s", parameterName, value)
 }

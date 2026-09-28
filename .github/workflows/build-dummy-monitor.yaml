@@ -23,7 +23,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v7
         with:
-          go-version: "1.16"
+          go-version-file: go.mod
 
       - name: Build
         run: task build-dummy-monitor
